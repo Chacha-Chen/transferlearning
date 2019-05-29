@@ -7,8 +7,18 @@ import numpy as np
 import scipy.io
 import scipy.linalg
 import sklearn.metrics
+from sklearn.neural_network import MLPClassifier
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from sklearn.gaussian_process import GaussianProcessClassifier
+from sklearn.gaussian_process.kernels import RBF
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, ExtraTreesClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+import pandas as pd
 
+Classifier = ['KNN','SVC','DEEP'][1]
 
 def kernel(ker, X1, X2, gamma):
     K = None
@@ -77,22 +87,58 @@ class TCA:
         :return: Accuracy and predicted_labels on the target domain
         '''
         Xs_new, Xt_new = self.fit(Xs, Xt)
-        clf = KNeighborsClassifier(n_neighbors=1)
-        clf.fit(Xs_new, Ys.ravel())
-        y_pred = clf.predict(Xt_new)
-        acc = sklearn.metrics.accuracy_score(Yt, y_pred)
+        # if Classifier=='KNN':
+        #     clf = KNeighborsClassifier(n_neighbors=1)
+        # elif Classifier=='SVC':
+        #     clf = SVC(kernel='linear',C=2.5)
+        global names
+        names = ["Nearest Neighbors", "Linear SVM", "RBF SVM", "Gaussian Process",
+                 "Decision Tree", "Random Forest", "Extra Tree", "Neural Net", "AdaBoost",
+                 "Naive Bayes", "QDA"]
+
+        classifiers = [
+            KNeighborsClassifier(1),
+            SVC(kernel="linear", C=2.5),
+            SVC(gamma=2, C=2.5),
+            GaussianProcessClassifier(1.0 * RBF(1.0)),
+            DecisionTreeClassifier(max_depth=5),
+            RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
+            ExtraTreesClassifier(n_estimators=10, max_depth=None, min_samples_split = 2, random_state = 0),
+            MLPClassifier(alpha=1, max_iter=2000,hidden_layer_sizes=(5, 2)),
+            AdaBoostClassifier(),
+            GaussianNB(),
+            QuadraticDiscriminantAnalysis()]
+        names = names[0]
+        classifiers = classifiers[0]
+        acc = []
+        for name, clf in zip(names, classifiers):
+
+            clf.fit(Xs_new, Ys.ravel())
+            y_pred = clf.predict(Xt_new)
+            acc.append(sklearn.metrics.accuracy_score(Yt, y_pred))
         return acc, y_pred
 
 
 if __name__ == '__main__':
     domains = ['caltech.mat', 'amazon.mat', 'webcam.mat', 'dslr.mat']
-    for i in [2]:
-        for j in [3]:
+    domains = ['Art_Art.csv',"Art_RealWorld.csv"]
+    datapath = "/Users/chenchacha/transferlearning/code/traditional/data/Office-Home_resnet50/"
+    for i in [0]:
+        for j in [1]:
             if i != j:
-                src, tar = 'data/' + domains[i], 'data/' + domains[j]
-                src_domain, tar_domain = scipy.io.loadmat(src), scipy.io.loadmat(tar)
-                Xs, Ys, Xt, Yt = src_domain['feas'], src_domain['label'], tar_domain['feas'], tar_domain['label']
+                src, tar = datapath + domains[i], datapath + domains[j]
+                # src_domain, tar_domain = scipy.io.loadmat(src), scipy.io.loadmat(tar)
+                Source = pd.read_csv(src,header=None)
+                Target = pd.read_csv(tar,header=None)
+                Ys = Source[2048]
+                Xs = Source.iloc[:, 0:2048]
+                Yt = Target[2048]
+                Xt = Target.iloc[:, 0:2048]
+                # Xs, Ys, Xt, Yt = src_domain['feas'], src_domain['label'], tar_domain['feas'], tar_domain['label']
                 tca = TCA(kernel_type='linear', dim=30, lamb=1, gamma=1)
-                acc, ypre = tca.fit_predict(Xs, Ys, Xt, Yt)
-                print(acc)
+                accs, ypre = tca.fit_predict(Xs, Ys, Xt, Yt)
+                for name,acc in zip(names,accs):
+                    print(name,acc)
+
+                # print(acc)
                 # It should print 0.910828025477707
