@@ -124,7 +124,7 @@ class TCA:
 if __name__ == '__main__':
     domains = ['caltech.mat', 'amazon.mat', 'webcam.mat', 'dslr.mat']
     domains = ['Art_Art.csv',"Art_RealWorld.csv"]
-    datapath = "/Users/chenchacha/transferlearning/code/traditional/data/Office-Home_resnet50/"
+    datapath = "../data/Office-Home_resnet50/"
     for i in [0]:
         for j in [1]:
             if i != j:
