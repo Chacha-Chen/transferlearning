@@ -75,6 +75,7 @@ class TCA:
         Z = np.dot(A.T, K)
         Z /= np.linalg.norm(Z, axis=0)
         Xs_new, Xt_new = Z[:, :ns].T, Z[:, ns:].T
+        print("fit done")
         return Xs_new, Xt_new
 
     def fit_predict(self, Xs, Ys, Xt, Yt):
@@ -108,12 +109,13 @@ class TCA:
             AdaBoostClassifier(),
             GaussianNB(),
             QuadraticDiscriminantAnalysis()]
-        names = names[0]
-        classifiers = classifiers[0]
+        names = names[:1]
+        classifiers = classifiers[:1]
         acc = []
         for name, clf in zip(names, classifiers):
-
+            print('begin clf fit')
             clf.fit(Xs_new, Ys.ravel())
+            print('clf fit done')
             y_pred = clf.predict(Xt_new)
             acc.append(sklearn.metrics.accuracy_score(Yt, y_pred))
         return acc, y_pred
