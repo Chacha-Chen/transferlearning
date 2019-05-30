@@ -17,8 +17,11 @@ from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, ExtraTr
 from sklearn.naive_bayes import GaussianNB
 from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 import pandas as pd
+from sklearn.decomposition import PCA
+from time import time
 
 Classifier = ['KNN','SVC','DEEP'][1]
+WHERTHER_PCA = True
 
 def kernel(ker, X1, X2, gamma):
     K = None
@@ -58,6 +61,7 @@ class TCA:
         :param Xt: nt * n_feature, target feature
         :return: Xs_new and Xt_new after TCA
         '''
+        t0=time()
         X = np.hstack((Xs.T, Xt.T))
         X /= np.linalg.norm(X, axis=0)
         m, n = X.shape
@@ -75,7 +79,7 @@ class TCA:
         Z = np.dot(A.T, K)
         Z /= np.linalg.norm(Z, axis=0)
         Xs_new, Xt_new = Z[:, :ns].T, Z[:, ns:].T
-        print("fit done")
+        print("fit done in %0.3fs" % (time() - t0))
         return Xs_new, Xt_new
 
     def fit_predict(self, Xs, Ys, Xt, Yt):
@@ -93,24 +97,31 @@ class TCA:
         # elif Classifier=='SVC':
         #     clf = SVC(kernel='linear',C=2.5)
         global names
-        names = ["Nearest Neighbors", "Linear SVM", "RBF SVM", "Gaussian Process",
-                 "Decision Tree", "Random Forest", "Extra Tree", "Neural Net", "AdaBoost",
-                 "Naive Bayes", "QDA"]
+        names = ["Nearest Neighbors",
+                 "Linear SVM",
+                 "RBF SVM",
+                 # "Gaussian Process",
+                 # "Decision Tree",
+                 # "Random Forest",
+                 "Extra Tree",
+                 "Neural Net",
+                 # "AdaBoost",
+                 # "Naive Bayes",
+                 # "QDA"
+                 ]
 
         classifiers = [
             KNeighborsClassifier(1),
             SVC(kernel="linear", C=2.5),
             SVC(gamma=2, C=2.5),
-            GaussianProcessClassifier(1.0 * RBF(1.0)),
-            DecisionTreeClassifier(max_depth=5),
-            RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
+            # GaussianProcessClassifier(1.0 * RBF(1.0)),
+            # DecisionTreeClassifier(max_depth=5),
+            # RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
             ExtraTreesClassifier(n_estimators=10, max_depth=None, min_samples_split = 2, random_state = 0),
-            MLPClassifier(alpha=1, max_iter=2000,hidden_layer_sizes=(5, 2)),
-            AdaBoostClassifier(),
-            GaussianNB(),
-            QuadraticDiscriminantAnalysis()]
-        names = names[:1]
-        classifiers = classifiers[:1]
+            MLPClassifier(alpha=1, max_iter=2000, hidden_layer_sizes=(5, 2)),
+            ]
+        # names = names[:1]
+        # classifiers = classifiers[:1]
         acc = []
         for name, clf in zip(names, classifiers):
             print('begin clf fit')
@@ -125,6 +136,7 @@ if __name__ == '__main__':
     domains = ['caltech.mat', 'amazon.mat', 'webcam.mat', 'dslr.mat']
     domains = ['Art_Art.csv',"Art_RealWorld.csv"]
     datapath = "../data/Office-Home_resnet50/"
+    # datapath = "../data/"
     for i in [0]:
         for j in [1]:
             if i != j:
@@ -137,8 +149,17 @@ if __name__ == '__main__':
                 Yt = Target[2048]
                 Xt = Target.iloc[:, 0:2048]
                 # Xs, Ys, Xt, Yt = src_domain['feas'], src_domain['label'], tar_domain['feas'], tar_domain['label']
+                if WHERTHER_PCA:
+                    t0=time()
+                    pca = PCA(n_components=0.9,svd_solver='full').fit(Xs)
+                    print("done in %0.3fs" % (time() - t0))
+                    t0 = time()
+                    Xs_new = pca.transform(Xs)
+                    Xt_new = pca.transform(Xt)
+                    print("done in %0.3fs" % (time() - t0))
+
                 tca = TCA(kernel_type='linear', dim=30, lamb=1, gamma=1)
-                accs, ypre = tca.fit_predict(Xs, Ys, Xt, Yt)
+                accs, ypre = tca.fit_predict(Xs_new, Ys, Xt_new, Yt)
                 for name,acc in zip(names,accs):
                     print(name,acc)
 
