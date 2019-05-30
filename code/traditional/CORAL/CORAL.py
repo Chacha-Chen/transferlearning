@@ -35,11 +35,13 @@ class CORAL:
         :param Xt: nt * n_feature, target feature
         :return: New source domain features
         '''
+        t0=time()
         cov_src = np.cov(Xs.T) + np.eye(Xs.shape[1])
         cov_tar = np.cov(Xt.T) + np.eye(Xt.shape[1])
         A_coral = np.dot(scipy.linalg.fractional_matrix_power(cov_src, -0.5),
                          scipy.linalg.fractional_matrix_power(cov_tar, 0.5))
         Xs_new = np.dot(Xs, A_coral)
+        print("fit done in ",time()-t0)
         return Xs_new
 
     def fit_predict(self, Xs, Ys, Xt, Yt):

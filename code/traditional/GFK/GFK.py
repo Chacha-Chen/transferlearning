@@ -38,6 +38,7 @@ class GFK:
         :param norm_inputs: normalize the inputs or not
         :return: GFK kernel G
         '''
+        t0=time()
         if norm_inputs:
             source, mu_source, std_source = self.znorm(Xs)
             target, mu_target, std_target = self.znorm(Xt)
@@ -101,6 +102,7 @@ class GFK:
         G = np.dot(np.dot(Ps, delta), Ps.T)
         sqG = scipy.real(scipy.linalg.fractional_matrix_power(G, 0.5))
         Xs_new, Xt_new = np.dot(sqG, Xs.T).T, np.dot(sqG, Xt.T).T
+        print("fit done in ",time()-t0)
         return G, Xs_new, Xt_new
 
     def fit_predict(self, Xs, Ys, Xt, Yt):

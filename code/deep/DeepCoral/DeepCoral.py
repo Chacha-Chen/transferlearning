@@ -18,9 +18,9 @@ no_cuda =False
 seed = 8
 log_interval = 10
 l2_decay = 5e-4
-root_path = "./dataset/"
-source_name = "amazon"
-target_name = "webcam"
+root_path = "./dataset/OfficeHomeDataset_10072016/"
+source_name = "Art"
+target_name = "Clipart"
 
 cuda = not no_cuda and torch.cuda.is_available()
 
