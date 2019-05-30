@@ -52,7 +52,8 @@ class CORAL:
         '''
         Xs_new = self.fit(Xs, Xt)
         global names
-        names = ["Nearest Neighbors",
+        names = [
+                 "Nearest Neighbors",
                  "Linear SVM",
                  "RBF SVM",
                  # "Gaussian Process",
@@ -73,7 +74,7 @@ class CORAL:
             # DecisionTreeClassifier(max_depth=5),
             # RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
             ExtraTreesClassifier(n_estimators=10, max_depth=None, min_samples_split = 2, random_state = 0),
-            MLPClassifier(alpha=1, max_iter=2000, hidden_layer_sizes=(5, 2)),
+            MLPClassifier(alpha=1, max_iter=2000,hidden_layer_sizes=(200,100)),
             ]
         acc = []
         for name, clf in zip(names, classifiers):
@@ -112,13 +113,13 @@ if __name__ == '__main__':
                 # Xs, Ys, Xt, Yt = src_domain['feas'], src_domain['label'], tar_domain['feas'], tar_domain['label']
                 if WHERTHER_PCA:
                     t0=time()
-                    pca = PCA(n_components=0.9,svd_solver='full').fit(Xs)
-                    print("done in %0.3fs" % (time() - t0))
-                    t0 = time()
+                    pca = PCA(n_components=0.95,svd_solver='full').fit(Xs)
+                    # print("done in %0.3fs" % (time() - t0))
+                    # t0 = time()
                     Xs = pca.transform(Xs)
                     Xt = pca.transform(Xt)
                     print(Xs.shape,Xs.shape)
-                    print("done in %0.3fs" % (time() - t0))
+                    # print("done in %0.3fs" % (time() - t0))
                 # src, tar = datapath + domains[i], '/Users/chenchacha/tra .nsferlearning/code/traditional/data/' + t_domains[j]
                 # src_domain, tar_domain = scipy.io.loadmat(src), scipy.io.loadmat(tar)
                 # Xs, Ys, Xt, Yt = src_domain['feas'], src_domain['label'], tar_domain['feas'], tar_domain['label']

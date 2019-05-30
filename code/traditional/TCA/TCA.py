@@ -119,7 +119,7 @@ class TCA:
             # DecisionTreeClassifier(max_depth=5),
             # RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
             ExtraTreesClassifier(n_estimators=10, max_depth=None, min_samples_split = 2, random_state = 0),
-            MLPClassifier(alpha=1, max_iter=2000, hidden_layer_sizes=(5, 2)),
+            MLPClassifier(alpha=1, max_iter=2000),
             ]
         # names = names[:1]
         # classifiers = classifiers[:1]
