@@ -7,8 +7,18 @@ import numpy as np
 import scipy.io
 import scipy.linalg
 import sklearn.metrics
+# from sklearn.neighbors import KNeighborsClassifier
+import pandas as pd
+from time import time
+from sklearn.neural_network import MLPClassifier
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, ExtraTreesClassifier
+from sklearn.model_selection import GridSearchCV
 
+from sklearn.svm import SVC
+from sklearn.decomposition import PCA
+
+WHERTHER_PCA = True
 
 def kernel(ker, X1, X2, gamma):
     K = None
@@ -60,6 +70,7 @@ class JDA:
         e = np.vstack((1 / ns * np.ones((ns, 1)), -1 / nt * np.ones((nt, 1))))
         C = len(np.unique(Ys))
         H = np.eye(n) - 1 / n * np.ones((n, n))
+        # Ys = np.array(Ys)
 
         M = e * e.T * C
         Y_tar_pseudo = None
@@ -69,7 +80,7 @@ class JDA:
                 for c in range(1, C + 1):
                     e = np.zeros((n, 1))
                     tt = Ys == c
-                    e[np.where(tt == True)] = 1 / len(Ys[np.where(Ys == c)])
+                    e[np.where(tt == True)] = 1 / len(np.array(Ys)[np.where(np.array(Ys) == c)])
                     yy = Y_tar_pseudo == c
                     ind = np.where(yy == True)
                     inds = [item + ns for item in ind]
@@ -88,23 +99,88 @@ class JDA:
             Z /= np.linalg.norm(Z, axis=0)
             Xs_new, Xt_new = Z[:, :ns].T, Z[:, ns:].T
 
-            clf = KNeighborsClassifier(n_neighbors=1)
-            clf.fit(Xs_new, Ys.ravel())
-            Y_tar_pseudo = clf.predict(Xt_new)
-            acc = sklearn.metrics.accuracy_score(Yt, Y_tar_pseudo)
-            list_acc.append(acc)
-            print('JDA iteration [{}/{}]: Acc: {:.4f}'.format(t + 1, self.T, acc))
-        return acc, Y_tar_pseudo, list_acc
+            global names
+            names = [
+                "Nearest Neighbors",
+                #      "Linear SVM",
+                #      "RBF SVM",
+                     # "Gaussian Process",
+                     # "Decision Tree",
+                     # "Random Forest",
+                     # "Extra Tree",
+                     # "Neural Net",
+                     # "AdaBoost",
+                     # "Naive Bayes",
+                     # "QDA"
+                     ]
+
+            classifiers = [
+                KNeighborsClassifier(1),
+                # SVC(kernel="linear", C=2.5),
+                # SVC(gamma=2, C=2.5),
+                # GaussianProcessClassifier(1.0 * RBF(1.0)),
+                # DecisionTreeClassifier(max_depth=5),
+                # RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
+                # ExtraTreesClassifier(n_estimators=10, max_depth=None, min_samples_split=2, random_state=0),
+                # MLPClassifier(alpha=1, max_iter=2000),
+            ]
+
+            accs = []
+            for name, clf in zip(names, classifiers):
+                t0 = time()
+                print('begin %s fit' % name)
+                clf.fit(Xs_new, Ys.ravel())
+                # print('clf fit done')
+                Y_tar_pseudo = clf.predict(Xt_new)
+                acc = sklearn.metrics.accuracy_score(Yt, Y_tar_pseudo)
+                accs.append(sklearn.metrics.accuracy_score(Yt, Y_tar_pseudo))
+                list_acc.append(acc)
+                print('JDA iteration [{}/{}]: Acc: {:.4f}'.format(t + 1, self.T, acc))
+                print("clf done in %0.3fs" % (time() - t0))
+            # return acc, y_pred
+
+
+
+            # clf = KNeighborsClassifier(n_neighbors=1)
+            # clf.fit(Xs_new, Ys.ravel())
+            # Y_tar_pseudo = clf.predict(Xt_new)
+            # acc = sklearn.metrics.accuracy_score(Yt, Y_tar_pseudo)
+            # list_acc.append(acc)
+            # print('JDA iteration [{}/{}]: Acc: {:.4f}'.format(t + 1, self.T, acc))
+        return accs, Y_tar_pseudo, list_acc
 
 
 if __name__ == '__main__':
-    domains = ['caltech.mat', 'amazon.mat', 'webcam.mat', 'dslr.mat']
-    for i in range(1):
-        for j in range(2):
-            if i != j:
-                src, tar = '/Users/chenchacha/transferlearning/code/traditional/data/' + domains[i], '/Users/chenchacha/transferlearning/code/traditional/data/' + domains[j]
-                src_domain, tar_domain = scipy.io.loadmat(src), scipy.io.loadmat(tar)
-                Xs, Ys, Xt, Yt = src_domain['feas'], src_domain['label'], tar_domain['feas'], tar_domain['label']
+    # domains = ['caltech.mat', 'amazon.mat', 'webcam.mat', 'dslr.mat']
+    domains = ['Art_Art.csv',"Clipart_Clipart.csv","Product_Product.csv"]
+    t_domains = ["Art_RealWorld.csv","Clipart_RealWorld.csv","Product_RealWorld.csv"]
+    datapath = "../data/Office-Home_resnet50/"
+    for i in range(len(domains)):
+        for j in range((len(domains))):
+            if i == j:
+                print("source:",domains[i])
+                print("target",t_domains[j])
+                src, tar = datapath + domains[i], datapath + t_domains[j]
+                # src, tar = '/Users/chenchacha/transferlearning/code/traditional/data/' + domains[i], '/Users/chenchacha/transferlearning/code/traditional/data/' + domains[j]
+                # src_domain, tar_domain = scipy.io.loadmat(src), scipy.io.loadmat(tar)
+                Source = pd.read_csv(src,header=None)
+                Target = pd.read_csv(tar,header=None)
+                Ys = Source[2048]
+                Xs = Source.iloc[:, 0:2048]
+                Yt = Target[2048]
+                Xt = Target.iloc[:, 0:2048]
+                if WHERTHER_PCA:
+                    t0=time()
+                    pca = PCA(n_components=0.95,svd_solver='full').fit(Xs)
+                    # print("done in %0.3fs" % (time() - t0))
+                    # t0 = time()
+                    Xs = pca.transform(Xs)
+                    Xt = pca.transform(Xt)
+                    print(Xs.shape,Xs.shape)
+                # Xs, Ys, Xt, Yt = src_domain['feas'], src_domain['label'], tar_domain['feas'], tar_domain['label']
                 jda = JDA(kernel_type='primal', dim=30, lamb=1, gamma=1)
-                acc, ypre, list_acc = jda.fit_predict(Xs, Ys, Xt, Yt)
-                print(acc)
+                accs, ypre, list_acc = jda.fit_predict(Xs, Ys, Xt, Yt)
+                # print(acc)
+                for name,acc in zip(names,accs):
+                    print(name,acc)
+

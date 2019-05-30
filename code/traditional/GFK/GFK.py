@@ -6,11 +6,20 @@
 
 import numpy as np
 import scipy.io
-import bob.learn
+# import bob.learn
 import bob.learn.linear
 import bob.math
 from sklearn.neighbors import KNeighborsClassifier
+import pandas as pd
+from time import time
+from sklearn.neural_network import MLPClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, ExtraTreesClassifier
+from sklearn.model_selection import GridSearchCV
 
+from sklearn.svm import SVC
+from sklearn.decomposition import PCA
+WHERTHER_PCA = True
 
 class GFK:
     def __init__(self, dim=20):
@@ -104,10 +113,48 @@ class GFK:
         :return: Accuracy, predicted labels of target domain, and G
         '''
         G, Xs_new, Xt_new = self.fit(Xs, Xt)
-        clf = KNeighborsClassifier(n_neighbors=1)
-        clf.fit(Xs_new, Ys.ravel())
-        y_pred = clf.predict(Xt_new)
-        acc = np.mean(y_pred == Yt.ravel())
+        global names
+        names = [
+                 # "Nearest Neighbors",
+                 # "Linear SVM",
+                 "RBF SVM",
+                 # "Gaussian Process",
+                 # "Decision Tree",
+                 # "Random Forest",
+                 "Extra Tree",
+                 # "Neural Net",
+                 # "AdaBoost",
+                 # "Naive Bayes",
+                 # "QDA"
+                 ]
+
+        classifiers = [
+            # KNeighborsClassifier(1),
+            # SVC(kernel="linear", C=2.5),
+            SVC(gamma=0.2, C=0.25),
+            # GaussianProcessClassifier(1.0 * RBF(1.0)),
+            # DecisionTreeClassifier(max_depth=5),
+            # RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
+            ExtraTreesClassifier(n_estimators=100, max_depth=None),
+            # MLPClassifier(alpha=1, max_iter=2000,hidden_layer_sizes=(200,100)),
+            ]
+        acc = []
+        for name, clf in zip(names, classifiers):
+            t0 = time()
+            print('begin %s fit' % name)
+            if name == 'RBF SVM':
+                params = {"C": [0.1, 1, 10], "gamma": [0.1, 0.01, 0.001]}
+                clf = GridSearchCV(clf, params)
+                # .fit(Xs_new, Ys.ravel())
+            clf.fit(Xs_new, Ys.ravel())
+            # print('clf fit done')
+            y_pred = clf.predict(Xt_new)
+            acc.append(np.mean(y_pred == Yt.ravel()))
+            print("clf done in %0.3fs" %(time()-t0))
+        # clf = KNeighborsClassifier(n_neighbors=1)
+        # clf.fit(Xs_new, Ys.ravel())
+        # y_pred = clf.predict(Xt_new)
+        # acc = np.mean(y_pred == Yt.ravel())
         return acc, y_pred, G
 
     def principal_angles(self, Ps, Pt):
@@ -184,13 +231,42 @@ class GFK:
 
 
 if __name__ == '__main__':
-    domains = ['caltech.mat', 'amazon.mat', 'webcam.mat', 'dslr.mat']
-    for i in range(4):
-        for j in range(4):
-            if i != j:
-                src, tar = 'data/' + domains[i], 'data/' + domains[j]
-                src_domain, tar_domain = scipy.io.loadmat(src), scipy.io.loadmat(tar)
-                Xs, Ys, Xt, Yt = src_domain['feas'], src_domain['label'], tar_domain['feas'], tar_domain['label']
+    # domains = ['caltech.mat', 'amazon.mat', 'webcam.mat', 'dslr.mat']
+    # datapath = "../data/Office-Home_resnet50/"
+    # datapath = "../data/"
+    domains = ['Art_Art.csv',"Clipart_Clipart.csv","Product_Product.csv"]
+    t_domains = ["Art_RealWorld.csv","Clipart_RealWorld.csv","Product_RealWorld.csv"]
+    datapath = "../data/Office-Home_resnet50/"
+    for i in range(len(domains)):
+        for j in range((len(domains))):
+            if i == j:
+                print("source:",domains[i])
+                print("target",t_domains[j])
+                src, tar = datapath + domains[i], datapath + t_domains[j]
+                # src, tar = '/Users/chenchacha/transferlearning/code/traditional/data/' + domains[i], '/Users/chenchacha/transferlearning/code/traditional/data/' + domains[j]
+                # src_domain, tar_domain = scipy.io.loadmat(src), scipy.io.loadmat(tar)
+                Source = pd.read_csv(src,header=None)
+                Target = pd.read_csv(tar,header=None)
+                Ys = Source[2048]
+                Xs = Source.iloc[:, 0:2048]
+                Yt = Target[2048]
+                Xt = Target.iloc[:, 0:2048]
+                if WHERTHER_PCA:
+                    t0=time()
+                    pca = PCA(n_components=0.95,svd_solver='full').fit(Xs)
+                    # print("done in %0.3fs" % (time() - t0))
+                    # t0 = time()
+                    Xs = pca.transform(Xs)
+                    Xt = pca.transform(Xt)
+                    print(Xs.shape,Xs.shape)
+                # src, tar = datapath + domains[i], datapath + domains[j]
+                # src_domain, tar_domain = scipy.io.loadmat(src), scipy.io.loadmat(tar)
+                # Xs, Ys, Xt, Yt = src_domain['feas'], src_domain['label'], tar_domain['feas'], tar_domain['label']
                 gfk = GFK(dim=20)
-                acc, ypred, G = gfk.fit_predict(Xs, Ys, Xt, Yt)
-                print(acc)
+                accs, ypred, G = gfk.fit_predict(Xs, Ys, Xt, Yt)
+                for name,acc in zip(names,accs):
+                    print(name,acc)
+                # print(acc)
+
+
+
