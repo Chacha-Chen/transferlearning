@@ -9,6 +9,18 @@ import scipy.io
 import scipy.linalg
 import sklearn.metrics
 import sklearn.neighbors
+import pandas as pd
+from time import time
+from sklearn.neural_network import MLPClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier, ExtraTreesClassifier
+
+from sklearn.svm import SVC
+from sklearn.decomposition import PCA
+
+
+
+WHERTHER_PCA = True
 
 
 class CORAL:
@@ -39,21 +51,79 @@ class CORAL:
         :return: Accuracy and predicted labels of target domain
         '''
         Xs_new = self.fit(Xs, Xt)
-        clf = sklearn.neighbors.KNeighborsClassifier(n_neighbors=1)
-        clf.fit(Xs_new, Ys.ravel())
-        y_pred = clf.predict(Xt)
-        acc = sklearn.metrics.accuracy_score(Yt, y_pred)
+        global names
+        names = ["Nearest Neighbors",
+                 "Linear SVM",
+                 "RBF SVM",
+                 # "Gaussian Process",
+                 # "Decision Tree",
+                 # "Random Forest",
+                 "Extra Tree",
+                 "Neural Net",
+                 # "AdaBoost",
+                 # "Naive Bayes",
+                 # "QDA"
+                 ]
+
+        classifiers = [
+            KNeighborsClassifier(1),
+            SVC(kernel="linear", C=2.5),
+            SVC(gamma=2, C=2.5),
+            # GaussianProcessClassifier(1.0 * RBF(1.0)),
+            # DecisionTreeClassifier(max_depth=5),
+            # RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
+            ExtraTreesClassifier(n_estimators=10, max_depth=None, min_samples_split = 2, random_state = 0),
+            MLPClassifier(alpha=1, max_iter=2000, hidden_layer_sizes=(5, 2)),
+            ]
+        acc = []
+        for name, clf in zip(names, classifiers):
+            t0 = time()
+            print('begin %s fit' % name)
+            clf.fit(Xs_new, Ys.ravel())
+            # print('clf fit done')
+            y_pred = clf.predict(Xt)
+            acc.append(sklearn.metrics.accuracy_score(Yt, y_pred))
+            print("clf done in %0.3fs" %(time()-t0))
+        # clf = KNeighborsClassifier(n_neighbors=1)
+        # clf.fit(Xs_new, Ys.ravel())
+        # y_pred = clf.predict(Xt)
+        # acc = sklearn.metrics.accuracy_score(Yt, y_pred)
         return acc, y_pred
 
 
 if __name__ == '__main__':
-    domains = ['caltech.mat', 'amazon.mat', 'webcam.mat', 'dslr.mat']
-    for i in range(4):
-        for j in range(4):
-            if i != j:
-                src, tar = '/Users/chenchacha/transferlearning/code/traditional/data/' + domains[i], '/Users/chenchacha/transferlearning/code/traditional/data/' + domains[j]
-                src_domain, tar_domain = scipy.io.loadmat(src), scipy.io.loadmat(tar)
-                Xs, Ys, Xt, Yt = src_domain['feas'], src_domain['label'], tar_domain['feas'], tar_domain['label']
+    # domains = ['caltech.mat', 'amazon.mat', 'webcam.mat', 'dslr.mat']
+    domains = ['Art_Art.csv',"Clipart_Clipart.csv","Product_Product.csv"]
+    t_domains = ["Art_RealWorld.csv","Clipart_RealWorld.csv","Product_RealWorld.csv"]
+    datapath = "../data/Office-Home_resnet50/"
+    for i in range(len(domains)):
+        for j in range((len(domains))):
+            if i == j:
+                print("source:",domains[i])
+                print("target",t_domains[j])
+                src, tar = datapath + domains[i], datapath + t_domains[j]
+                # src_domain, tar_domain = scipy.io.loadmat(src), scipy.io.loadmat(tar)
+                Source = pd.read_csv(src,header=None)
+                Target = pd.read_csv(tar,header=None)
+                Ys = Source[2048]
+                Xs = Source.iloc[:, 0:2048]
+                Yt = Target[2048]
+                Xt = Target.iloc[:, 0:2048]
+                # Xs, Ys, Xt, Yt = src_domain['feas'], src_domain['label'], tar_domain['feas'], tar_domain['label']
+                if WHERTHER_PCA:
+                    t0=time()
+                    pca = PCA(n_components=0.9,svd_solver='full').fit(Xs)
+                    print("done in %0.3fs" % (time() - t0))
+                    t0 = time()
+                    Xs = pca.transform(Xs)
+                    Xt = pca.transform(Xt)
+                    print(Xs.shape,Xs.shape)
+                    print("done in %0.3fs" % (time() - t0))
+                # src, tar = datapath + domains[i], '/Users/chenchacha/tra .nsferlearning/code/traditional/data/' + t_domains[j]
+                # src_domain, tar_domain = scipy.io.loadmat(src), scipy.io.loadmat(tar)
+                # Xs, Ys, Xt, Yt = src_domain['feas'], src_domain['label'], tar_domain['feas'], tar_domain['label']
                 coral = CORAL()
-                acc, ypre = coral.fit_predict(Xs, Ys, Xt, Yt)
-                print(acc)
+                accs, _ = coral.fit_predict(Xs, Ys, Xt, Yt)
+                # print(acc)
+                for name,acc in zip(names,accs):
+                    print(name,acc)

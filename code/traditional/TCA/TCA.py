@@ -61,6 +61,7 @@ class TCA:
         :param Xt: nt * n_feature, target feature
         :return: Xs_new and Xt_new after TCA
         '''
+        print("begin TCA fit")
         t0=time()
         X = np.hstack((Xs.T, Xt.T))
         X /= np.linalg.norm(X, axis=0)
@@ -124,23 +125,27 @@ class TCA:
         # classifiers = classifiers[:1]
         acc = []
         for name, clf in zip(names, classifiers):
-            print('begin clf fit')
+            t0 = time()
+            print('begin %s fit' % name)
             clf.fit(Xs_new, Ys.ravel())
-            print('clf fit done')
+            # print('clf fit done')
             y_pred = clf.predict(Xt_new)
             acc.append(sklearn.metrics.accuracy_score(Yt, y_pred))
+            print("clf done in %0.3fs" %(time()-t0))
         return acc, y_pred
 
 
 if __name__ == '__main__':
-    domains = ['caltech.mat', 'amazon.mat', 'webcam.mat', 'dslr.mat']
-    domains = ['Art_Art.csv',"Art_RealWorld.csv"]
+    # domains = ['caltech.mat', 'amazon.mat', 'webcam.mat', 'dslr.mat']
+    domains = ['Art_Art.csv',"Clipart_Clipart.csv","Product_Product.csv"]
+    t_domains = ["Art_RealWorld.csv","Clipart_RealWorld.csv","Product_RealWorld.csv"]
     datapath = "../data/Office-Home_resnet50/"
-    # datapath = "../data/"
-    for i in [0]:
-        for j in [1]:
-            if i != j:
-                src, tar = datapath + domains[i], datapath + domains[j]
+    for i in range(len(domains)):
+        for j in range(len(domains)):
+            if i == j:
+                print("source:", domains[i])
+                print("target", t_domains[j])
+                src, tar = datapath + domains[i], datapath + t_domains[j]
                 # src_domain, tar_domain = scipy.io.loadmat(src), scipy.io.loadmat(tar)
                 Source = pd.read_csv(src,header=None)
                 Target = pd.read_csv(tar,header=None)
@@ -156,6 +161,7 @@ if __name__ == '__main__':
                     t0 = time()
                     Xs_new = pca.transform(Xs)
                     Xt_new = pca.transform(Xt)
+                    print(Xs.shape,Xs_new.shape)
                     print("done in %0.3fs" % (time() - t0))
 
                 tca = TCA(kernel_type='linear', dim=30, lamb=1, gamma=1)
