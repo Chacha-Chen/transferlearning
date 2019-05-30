@@ -147,7 +147,7 @@ class ResNet(nn.Module):
         return x
 
 class DeepCoral(nn.Module):
-    def __init__(self, num_classes=31):
+    def __init__(self, num_classes=65):
         super(DeepCoral, self).__init__()
         self.sharedNet = resnet50(False)
         self.cls_fc = nn.Linear(2048, num_classes)

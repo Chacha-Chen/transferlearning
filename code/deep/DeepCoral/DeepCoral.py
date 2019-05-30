@@ -107,7 +107,7 @@ def test(model):
 
 
 if __name__ == '__main__':
-    model = models.DeepCoral(num_classes=31)
+    model = models.DeepCoral(num_classes=65)
     correct = 0
     print(model)
     if cuda:
