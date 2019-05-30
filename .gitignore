@@ -5,4 +5,4 @@ code/.DS_Store
 .DS_Store
 code/traditional/data/*
 code/deep/DeepCoral/dataset/OfficeHomeDataset_10072016/*
-
+code/deep/DeepCoral/__pycache__/*
