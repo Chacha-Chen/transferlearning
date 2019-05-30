@@ -115,28 +115,28 @@ class GFK:
         G, Xs_new, Xt_new = self.fit(Xs, Xt)
         global names
         names = [
-                 # "Nearest Neighbors",
-                 # "Linear SVM",
+                 "Nearest Neighbors",
+                 "Linear SVM",
                  "RBF SVM",
                  # "Gaussian Process",
                  # "Decision Tree",
                  # "Random Forest",
                  "Extra Tree",
-                 # "Neural Net",
+                 "Neural Net",
                  # "AdaBoost",
                  # "Naive Bayes",
                  # "QDA"
                  ]
 
         classifiers = [
-            # KNeighborsClassifier(1),
-            # SVC(kernel="linear", C=2.5),
+            KNeighborsClassifier(1),
+            SVC(kernel="linear", C=2.5),
             SVC(gamma=0.2, C=0.25),
             # GaussianProcessClassifier(1.0 * RBF(1.0)),
             # DecisionTreeClassifier(max_depth=5),
             # RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1),
             ExtraTreesClassifier(n_estimators=100, max_depth=None),
-            # MLPClassifier(alpha=1, max_iter=2000,hidden_layer_sizes=(200,100)),
+            MLPClassifier(alpha=1, max_iter=2000,hidden_layer_sizes=(200,100)),
             ]
         acc = []
         for name, clf in zip(names, classifiers):
